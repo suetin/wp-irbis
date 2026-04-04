@@ -18,7 +18,19 @@ final class BladeRenderer implements RendererStrategy
         try {
             return (string) view($view, $context)->render();
         } catch (\Throwable $exception) {
-            return '';
+            do_action('wp_irbis/template_render_error', $exception, $template, $view, $context);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                return sprintf(
+                    '<div class="wp-irbis-notice wp-irbis-notice--error">%s</div>',
+                    esc_html(sprintf('WP IRBIS Blade error in [%s]: %s', $view, $exception->getMessage()))
+                );
+            }
+
+            return sprintf(
+                '<div class="wp-irbis-notice wp-irbis-notice--error">%s</div>',
+                esc_html__('Ошибка рендера шаблона каталога.', 'wp-irbis')
+            );
         }
     }
 
@@ -42,7 +54,8 @@ final class BladeRenderer implements RendererStrategy
                     return $candidate;
                 }
             } catch (\Throwable $exception) {
-                return '';
+                do_action('wp_irbis/template_render_error', $exception, $template, $candidate, []);
+                break;
             }
         }
 

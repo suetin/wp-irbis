@@ -29,20 +29,25 @@ final class Plugin
 
     private SearchService $search;
 
+    private RequestResolver $requests;
+
+    private Assets $assets;
+
     private function __construct()
     {
+        $this->assets = new Assets();
         $this->templates = new TemplateRenderer([
             new BladeRenderer(),
             new PhpRenderer(WP_IRBIS_PATH . '/templates'),
         ]);
 
-        $requests = new RequestResolver(new UrlResolver());
+        $this->requests = new RequestResolver(new UrlResolver());
         $this->search = new SearchService(
             new IrbisGateway(new ConnectionFactory()),
             new BookMapper()
         );
 
-        $this->catalog = new Catalog($this->search, $requests, $this->templates);
+        $this->catalog = new Catalog($this->search, $this->requests, $this->templates, $this->assets);
     }
 
     public static function boot(): void
@@ -81,9 +86,9 @@ final class Plugin
 
     private function register(): void
     {
-        (new Assets())->register();
+        $this->assets->register();
         (new Settings())->register();
         (new CatalogShortcode($this->catalog))->register();
-        (new SearchController($this->search, new RequestResolver(new UrlResolver())))->register();
+        (new SearchController($this->search, $this->requests))->register();
     }
 }

@@ -7,18 +7,21 @@ namespace WpIrbis\Api;
 use WpIrbis\Domain\CatalogResult;
 use WpIrbis\Http\RequestResolver;
 use WpIrbis\Rendering\TemplateRenderer;
+use WpIrbis\Support\Assets;
 
 final class Catalog
 {
     public function __construct(
         private readonly SearchService $search,
         private readonly RequestResolver $requests,
-        private readonly TemplateRenderer $templates
+        private readonly TemplateRenderer $templates,
+        private readonly Assets $assets
     ) {
     }
 
     public function render(array $args = []): string
     {
+        $this->assets->enqueue();
         $request = $this->requests->fromArray($args);
         $result = $this->search->search($request);
 
@@ -33,6 +36,7 @@ final class Catalog
 
     public function renderCurrentRequest(array $args = []): string
     {
+        $this->assets->enqueue();
         $request = $this->requests->fromGlobals($args);
         $result = $this->search->search($request);
 

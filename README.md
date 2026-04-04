@@ -26,7 +26,7 @@
 composer install
 ```
 
-2. Подключить плагин в WordPress.
+2. Активировать плагин в WordPress.
 3. В `Настройки > Общие` заполнить:
 
 - IP сервера ИРБИС
@@ -37,7 +37,7 @@ composer install
 Важно:
 
 - для работы библиотеки ИРБИС нужно PHP-расширение `mbstring`
-- без `vendor/autoload.php` плагин не загрузится
+- без `vendor/autoload.php` плагин не загрузится и в админке покажет notice с требованием выполнить `composer install`
 
 ## Структура
 
@@ -114,7 +114,7 @@ echo irbis_catalog_template('book-card', [
 
 Контракт:
 
-- `irbis_catalog()` использует текущий HTTP request
+- `irbis_catalog()` рендерит каталог с учетом текущего HTTP request и переданных аргументов
 - `irbis_catalog_search()` возвращает массив
 - `irbis_catalog_search_result()` возвращает `\WpIrbis\Domain\CatalogResult`
 
@@ -142,10 +142,12 @@ echo irbis_catalog_template('book-card', [
 
 Ответ:
 
-- `items`
-- `error`
-- `request`
-- `has_query`
+- `items` — массив найденных книг
+- `error` — ошибка поиска или `null`
+- `request` — нормализованный request
+- `has_query` — был ли передан поисковый запрос
+
+В публичном ответе нет внутренних объектов библиотеки ИРБИС. REST и `irbis_catalog_search()` возвращают только безопасные сериализуемые данные.
 
 ## Шаблоны
 
@@ -196,6 +198,12 @@ templates/book-card.php
 - `$context['request']` — `\WpIrbis\Domain\CatalogRequest`
 - `$context['result']` — `\WpIrbis\Domain\CatalogResult`
 - `$context['book']` — `\WpIrbis\Domain\Book`
+
+Если Blade-шаблон найден, но падает во время рендера, плагин не переключается молча на PHP fallback. Ошибка рендера будет показана в выводе каталога и дополнительно отправлена в `do_action('wp_irbis/template_render_error', ...)`.
+
+## Ассеты
+
+CSS и JS плагина регистрируются глобально, но реально подключаются только при рендере каталога.
 
 ## Хуки
 
@@ -253,3 +261,5 @@ add_filter('wp_irbis/book_data', function ($book) {
     return $book;
 });
 ```
+
+Фильтр `wp_irbis/book_data` получает объект `\WpIrbis\Domain\Book` и может вернуть либо его, либо массив полей для пересборки книги.

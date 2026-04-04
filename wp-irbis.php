@@ -20,6 +20,20 @@ define('WP_IRBIS_URL', plugin_dir_url(__FILE__));
 
 $wp_irbis_vendor = WP_IRBIS_PATH . '/vendor/autoload.php';
 if (! file_exists($wp_irbis_vendor)) {
+    add_action(
+        'admin_notices',
+        static function (): void {
+            if (! current_user_can('activate_plugins')) {
+                return;
+            }
+            ?>
+            <div class="notice notice-error">
+                <p><?php esc_html_e('WP IRBIS: отсутствует vendor/autoload.php. Выполните composer install в директории плагина.', 'wp-irbis'); ?></p>
+            </div>
+            <?php
+        }
+    );
+
     return;
 }
 

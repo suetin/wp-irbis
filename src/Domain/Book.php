@@ -29,8 +29,6 @@ final class Book
             'category' => $this->category,
             'category_link' => $this->categoryLink,
             'cover' => $this->cover,
-            'record' => $this->record,
-            'brief' => $this->brief,
         ];
     }
 }
