@@ -1,12 +1,62 @@
 # WP IRBIS
 
-Плагин использует встроенную библиотеку ИРБИС из `libs/Irbis`, а поверх неё собран новый слой:
+Плагин для интеграции WordPress с библиотечным каталогом ИРБИС.
 
-- Composer PSR-4 автозагрузка для кода плагина
+Текущая версия не использует `old` на рантайме. Актуальный код и библиотека лежат в:
+
+- `src/` — код плагина
+- `templates/` — встроенные PHP-шаблоны
+- `libs/Irbis/` — встроенная библиотека клиента ИРБИС
+- `assets/` — стили, JS и placeholder-обложка
+
+## Что внутри
+
+- Composer PSR-4 автозагрузка
 - DTO для запроса и результата
-- сервис поиска
+- отдельный сервис поиска
 - REST API
-- стратегия рендера Blade/PHP с фолбеком на шаблоны плагина
+- рендер через Sage Blade или PHP-шаблоны темы
+- фолбек на встроенные шаблоны плагина
+
+## Установка
+
+1. Установить зависимости:
+
+```bash
+composer install
+```
+
+2. Подключить плагин в WordPress.
+3. В `Настройки > Общие` заполнить:
+
+- IP сервера ИРБИС
+- логин
+- пароль
+- базу данных
+
+Важно:
+
+- для работы библиотеки ИРБИС нужно PHP-расширение `mbstring`
+- без `vendor/autoload.php` плагин не загрузится
+
+## Структура
+
+```text
+wp-irbis.php
+src/
+templates/
+libs/Irbis/
+assets/
+```
+
+Основные классы:
+
+- `WpIrbis\Plugin` — bootstrap и регистрация
+- `WpIrbis\Api\Catalog` — фасад для рендера и поиска
+- `WpIrbis\Api\SearchService` — поиск и сбор результата
+- `WpIrbis\Http\RequestResolver` — нормализация входных параметров
+- `WpIrbis\Rendering\TemplateRenderer` — оркестратор рендера
+- `WpIrbis\Rest\SearchController` — REST endpoint
 
 ## Шорткод
 
@@ -16,28 +66,57 @@
 [irbis-catalog]
 ```
 
+Поддерживаемые атрибуты:
+
+- `search_by`
+- `search_string`
+- `search_category`
+- `limit`
+- `show_form`
+- `show_results`
+
 ## PHP API
+
+Рендер каталога:
 
 ```php
 echo irbis_catalog([
     'search_by' => 'author',
     'search_string' => 'Пушкин',
 ]);
+```
 
+Поиск с массивом результата:
+
+```php
 $result = irbis_catalog_search([
     'search_by' => 'title',
     'search_string' => 'Война и мир',
 ]);
+```
 
-$dto = irbis_catalog_search_result([
+Поиск с DTO:
+
+```php
+$result = irbis_catalog_search_result([
     'search_by' => 'keywords',
     'search_string' => 'фольклор',
 ]);
 ```
 
-`irbis_catalog_search()` возвращает массив.
+Вспомогательный рендер шаблона:
 
-`irbis_catalog_search_result()` возвращает `\WpIrbis\Domain\CatalogResult`.
+```php
+echo irbis_catalog_template('book-card', [
+    'book' => $book,
+]);
+```
+
+Контракт:
+
+- `irbis_catalog()` использует текущий HTTP request
+- `irbis_catalog_search()` возвращает массив
+- `irbis_catalog_search_result()` возвращает `\WpIrbis\Domain\CatalogResult`
 
 ## REST API
 
@@ -60,6 +139,13 @@ $dto = irbis_catalog_search_result([
 - `search_category`
 - `limit`
 - `base_url`
+
+Ответ:
+
+- `items`
+- `error`
+- `request`
+- `has_query`
 
 ## Шаблоны
 
@@ -96,38 +182,74 @@ your-theme/irbis/results.php
 your-theme/irbis/book-card.php
 ```
 
+Встроенные шаблоны плагина:
+
+```text
+templates/catalog.php
+templates/search-form.php
+templates/results.php
+templates/book-card.php
+```
+
 Контекст шаблонов:
 
-- `$context['request']` это `\WpIrbis\Domain\CatalogRequest`
-- `$context['result']` это `\WpIrbis\Domain\CatalogResult`
-- `$context['book']` это `\WpIrbis\Domain\Book`
+- `$context['request']` — `\WpIrbis\Domain\CatalogRequest`
+- `$context['result']` — `\WpIrbis\Domain\CatalogResult`
+- `$context['book']` — `\WpIrbis\Domain\Book`
 
 ## Хуки
 
+Изменить request:
+
 ```php
 add_filter('wp_irbis/request', function ($request) {
-    if ($request instanceof \WpIrbis\Domain\CatalogRequest) {
-        return new \WpIrbis\Domain\CatalogRequest(
-            $request->searchBy,
-            $request->searchString,
-            $request->searchCategory,
-            20,
-            $request->baseUrl,
-            $request->showForm,
-            $request->showResults
-        );
+    if (! $request instanceof \WpIrbis\Domain\CatalogRequest) {
+        return $request;
     }
 
-    return $request;
+    return new \WpIrbis\Domain\CatalogRequest(
+        $request->searchBy,
+        $request->searchString,
+        $request->searchCategory,
+        20,
+        $request->baseUrl,
+        $request->showForm,
+        $request->showResults
+    );
 });
+```
 
+Переопределить Blade view:
+
+```php
 add_filter('wp_irbis/template_blade_views', function (array $views, string $template) {
     array_unshift($views, 'components.irbis.' . str_replace('/', '.', $template));
     return $views;
 }, 10, 2);
+```
 
+Переопределить PHP-пути шаблонов:
+
+```php
 add_filter('wp_irbis/template_php_paths', function (array $paths) {
     array_unshift($paths, get_stylesheet_directory() . '/views/catalog');
     return $paths;
+});
+```
+
+Изменить параметры поиска:
+
+```php
+add_filter('wp_irbis/search_parameters', function ($parameters, $request) {
+    $parameters->numberOfRecords = 20;
+    return $parameters;
+}, 10, 2);
+```
+
+Изменить книгу после маппинга:
+
+```php
+add_filter('wp_irbis/book_data', function ($book) {
+    return $book;
 });
 ```
