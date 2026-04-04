@@ -24,9 +24,10 @@ final class SearchService
     public function search(CatalogRequest $request): CatalogResult
     {
         if (! $request->hasQuery()) {
-            return new CatalogResult([], null, $request, false);
+            return new CatalogResult([], null, $request, false, $this->makeDebugPayload($request));
         }
 
+        $parameters = null;
         try {
             $parameters = $this->buildParameters($request);
             $foundBooks = $this->gateway->search($parameters);
@@ -36,11 +37,18 @@ final class SearchService
                 [],
                 new WP_Error($exception->errorCodeName(), $exception->getMessage()),
                 $request,
-                true
+                true,
+                $this->makeDebugPayload($request, $parameters, [], 0, false, $exception)
             );
         }
 
-        $result = new CatalogResult($items, null, $request, true);
+        $result = new CatalogResult(
+            $items,
+            null,
+            $request,
+            true,
+            $this->makeDebugPayload($request, $parameters, $foundBooks, count($items), true)
+        );
         $filtered = apply_filters('wp_irbis/search_result', $result, $request, $parameters);
 
         return $filtered instanceof CatalogResult ? $filtered : $result;
@@ -105,5 +113,30 @@ final class SearchService
             $map[$request->searchBy] ?? 'T=',
             $request->searchString . '$'
         );
+    }
+
+    private function makeDebugPayload(
+        CatalogRequest $request,
+        ?SearchParameters $parameters = null,
+        array $foundBooks = [],
+        int $mappedItems = 0,
+        bool $connectionOk = false,
+        ?IrbisException $exception = null
+    ): array {
+        return [
+            'enabled' => \WpIrbis\Support\Debug::isDevelopment(),
+            'environment' => function_exists('wp_get_environment_type') ? wp_get_environment_type() : (defined('WP_ENV') ? WP_ENV : 'unknown'),
+            'connection_ok' => $connectionOk,
+            'search_by' => $request->searchBy,
+            'search_string' => $request->searchString,
+            'search_category' => $request->searchCategory,
+            'base_url' => $request->baseUrl,
+            'limit' => $request->limit,
+            'expression' => $parameters instanceof SearchParameters ? (string) $parameters->expression : '',
+            'found_count' => count($foundBooks),
+            'rendered_count' => $mappedItems,
+            'error_code' => $exception?->errorCodeName(),
+            'error_message' => $exception?->getMessage(),
+        ];
     }
 }

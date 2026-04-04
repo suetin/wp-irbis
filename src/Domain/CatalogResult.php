@@ -15,7 +15,8 @@ final class CatalogResult
         public readonly array $items,
         public readonly ?WP_Error $error,
         public readonly CatalogRequest $request,
-        public readonly bool $hasQuery
+        public readonly bool $hasQuery,
+        public readonly array $debug = []
     ) {
     }
 
@@ -29,6 +30,7 @@ final class CatalogResult
             'error' => $this->error,
             'request' => $this->request->toArray(),
             'has_query' => $this->hasQuery,
+            'debug' => $this->debug,
         ];
     }
 }
