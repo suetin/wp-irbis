@@ -43,6 +43,7 @@ $debug = $result instanceof \WpIrbis\Domain\CatalogResult ? $result->debug : [];
                 'found_count' => $debug['found_count'] ?? null,
                 'rendered_count' => $debug['rendered_count'] ?? null,
                 'base_url' => $debug['base_url'] ?? null,
+                'request_uri' => $debug['request_uri'] ?? null,
                 'error_code' => $debug['error_code'] ?? null,
                 'error_message' => $debug['error_message'] ?? null,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>

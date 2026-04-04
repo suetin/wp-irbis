@@ -135,6 +135,7 @@ final class SearchService
             'expression' => $parameters instanceof SearchParameters ? (string) $parameters->expression : '',
             'found_count' => count($foundBooks),
             'rendered_count' => $mappedItems,
+            'request_uri' => isset($_SERVER['REQUEST_URI']) ? (string) wp_unslash($_SERVER['REQUEST_URI']) : null,
             'error_code' => $exception?->errorCodeName(),
             'error_message' => $exception?->getMessage(),
         ];

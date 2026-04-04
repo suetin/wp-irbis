@@ -22,6 +22,11 @@ final class RequestResolver
             'base_url' => null,
         ];
 
+        $args = array_filter(
+            $args,
+            static fn ($value): bool => $value !== null
+        );
+
         return $this->fromArray(array_merge($query, $args));
     }
 
