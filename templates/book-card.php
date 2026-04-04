@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $book = $context['book'] ?? null;
 $cover = $book instanceof \WpIrbis\Domain\Book ? $book->cover : '';
-$placeholder = WP_IRBIS_URL . 'old/assets/img/book-placeholder.png';
+$placeholder = WP_IRBIS_URL . 'assets/img/book-placeholder.png';
 ?>
 <article class="wp-irbis-book-card" data-mfn="<?php echo esc_attr($book instanceof \WpIrbis\Domain\Book ? $book->mfn : ''); ?>">
     <div class="wp-irbis-book-card__media">

@@ -8,7 +8,7 @@
       "WpIrbis\\": "src/"
     },
     "classmap": [
-      "old/libs/Irbis"
+      "libs/Irbis"
     ]
   },
   "require": {}
