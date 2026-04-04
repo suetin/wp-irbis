@@ -21,7 +21,7 @@ final class CatalogShortcode
         add_shortcode('irbis-catalog', [$this, 'render']);
     }
 
-    public function render(array $atts = []): string
+    public function render(array $atts = [], ?string $content = null, string $tag = ''): string
     {
         $atts = shortcode_atts(
             [
@@ -33,9 +33,9 @@ final class CatalogShortcode
                 'show_results' => true,
             ],
             $atts,
-            current_filter()
+            $tag !== '' ? $tag : 'irbis_catalog'
         );
 
-        return $this->catalog->render($atts);
+        return $this->catalog->renderCurrentRequest($atts);
     }
 }

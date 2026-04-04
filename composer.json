@@ -1,0 +1,15 @@
+{
+  "name": "suetin/wp-irbis",
+  "description": "WordPress plugin for IRBIS catalog integration",
+  "type": "wordpress-plugin",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "WpIrbis\\": "src/"
+    },
+    "classmap": [
+      "old/libs/Irbis"
+    ]
+  },
+  "require": {}
+}

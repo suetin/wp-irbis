@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-$result = $context['result'] ?? ['items' => [], 'error' => null];
-$items = $result['items'] ?? [];
-$error = $result['error'] ?? null;
-$hasQuery = (bool) ($result['has_query'] ?? false);
+$result = $context['result'] ?? null;
+$items = $result instanceof \WpIrbis\Domain\CatalogResult ? $result->items : [];
+$error = $result instanceof \WpIrbis\Domain\CatalogResult ? $result->error : null;
+$hasQuery = $result instanceof \WpIrbis\Domain\CatalogResult ? $result->hasQuery : false;
 ?>
 <div class="wp-irbis-results">
     <?php if (! $hasQuery) : ?>

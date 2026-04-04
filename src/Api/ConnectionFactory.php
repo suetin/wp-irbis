@@ -6,12 +6,23 @@ namespace WpIrbis\Api;
 
 use Irbis\Connection;
 use WpIrbis\Admin\Settings;
+use WpIrbis\Exceptions\IrbisException;
 use function Irbis\describe_error;
 
 final class ConnectionFactory
 {
-    public function make()
+    /**
+     * @throws IrbisException
+     */
+    public function make(): Connection
     {
+        if (! function_exists('mb_internal_encoding')) {
+            throw new IrbisException(
+                __('Для работы WP IRBIS требуется расширение PHP mbstring.', 'wp-irbis'),
+                'wp_irbis_missing_mbstring'
+            );
+        }
+
         $settings = get_option(Settings::OPTION, []);
         $settings = is_array($settings) ? $settings : [];
 
@@ -21,9 +32,9 @@ final class ConnectionFactory
             empty($settings['password']) ||
             empty($settings['database'])
         ) {
-            return new \WP_Error(
-                'wp_irbis_missing_settings',
-                __('Плагин WP IRBIS не настроен.', 'wp-irbis')
+            throw new IrbisException(
+                __('Плагин WP IRBIS не настроен.', 'wp-irbis'),
+                'wp_irbis_missing_settings'
             );
         }
 
@@ -34,13 +45,14 @@ final class ConnectionFactory
         $connection->database = (string) $settings['database'];
 
         if (! $connection->connect()) {
-            return new \WP_Error(
-                'wp_irbis_connection_failed',
+            throw new IrbisException(
                 sprintf(
                     '%s %s',
                     __('Не удалось подключиться к ИРБИС.', 'wp-irbis'),
                     describe_error($connection->lastError)
-                )
+                ),
+                'wp_irbis_connection_failed',
+                (int) $connection->lastError
             );
         }
 
