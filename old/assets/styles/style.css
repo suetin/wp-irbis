@@ -1,0 +1,33 @@
+.img-responsive {
+  display: block;
+  width: 100%;
+  height: auto; }
+
+.irbis-catalog-listing-item {
+  display: flex;
+  position: relative; }
+  .irbis-catalog-listing-item__col-left {
+    padding-right: 16px;
+    flex: 0 0 150px; }
+  .irbis-catalog-listing-item__order-btn-wrapper {
+    margin-top: 8px; }
+  .irbis-catalog-listing-item__cat {
+    font-size: 14px;
+    border: 1px solid #dedede;
+    padding: 0 8px 1px 8px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 8px;
+    text-decoration: none; }
+  .irbis-catalog-listing-item__id {
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 14px;
+    background-color: #eeeeee;
+    padding: 0 4px;
+    border-radius: 2px; }
+
+.irbis-search-form {
+  padding: 16px;
+  background-color: #fafafa; }
