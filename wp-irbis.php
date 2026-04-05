@@ -41,13 +41,6 @@ require_once $wp_irbis_vendor;
 
 \WpIrbis\Plugin::boot();
 
-if (! function_exists('irbis_catalog')) {
-    function irbis_catalog(array $args = []): string
-    {
-        return \WpIrbis\Plugin::instance()->catalog()->renderCurrentRequest($args);
-    }
-}
-
 if (! function_exists('irbis_catalog_search')) {
     function irbis_catalog_search(array $args = []): array
     {
@@ -59,12 +52,5 @@ if (! function_exists('irbis_catalog_search_result')) {
     function irbis_catalog_search_result(array $args = []): \WpIrbis\Domain\CatalogResult
     {
         return \WpIrbis\Plugin::instance()->catalog()->searchResult($args);
-    }
-}
-
-if (! function_exists('irbis_catalog_template')) {
-    function irbis_catalog_template(string $template, array $context = []): string
-    {
-        return \WpIrbis\Plugin::instance()->templates()->render($template, $context);
     }
 }

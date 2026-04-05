@@ -36,6 +36,7 @@ final class SearchController
                     'search_by' => ['type' => 'string'],
                     'search_string' => ['type' => 'string'],
                     'search_category' => ['type' => 'string'],
+                    'filters' => ['type' => 'object'],
                     'limit' => ['type' => 'integer'],
                     'base_url' => ['type' => 'string'],
                 ],
@@ -45,7 +46,7 @@ final class SearchController
 
     public function search(WP_REST_Request $request): WP_REST_Response
     {
-        $catalogRequest = $this->requests->fromArray($request->get_params());
+        $catalogRequest = $this->requests->searchFromArray($request->get_params());
         $result = $this->search->search($catalogRequest);
 
         return new WP_REST_Response(

@@ -7,9 +7,9 @@ namespace WpIrbis\Api;
 use Irbis\Search;
 use Irbis\SearchParameters;
 use WP_Error;
-use WpIrbis\Domain\CatalogRequest;
 use WpIrbis\Domain\CatalogResult;
 use WpIrbis\Domain\Book;
+use WpIrbis\Domain\SearchRequest;
 use WpIrbis\Exceptions\IrbisException;
 use const Irbis\BRIEF_FORMAT;
 
@@ -21,7 +21,7 @@ final class SearchService
     ) {
     }
 
-    public function search(CatalogRequest $request): CatalogResult
+    public function search(SearchRequest $request): CatalogResult
     {
         if (! $request->hasQuery()) {
             return new CatalogResult([], null, $request, false, $this->makeDebugPayload($request));
@@ -54,7 +54,7 @@ final class SearchService
         return $filtered instanceof CatalogResult ? $filtered : $result;
     }
 
-    private function buildParameters(CatalogRequest $request): SearchParameters
+    private function buildParameters(SearchRequest $request): SearchParameters
     {
         $parameters = new SearchParameters();
         $parameters->format = BRIEF_FORMAT;
@@ -71,7 +71,7 @@ final class SearchService
      * @return Book[]
      * @throws IrbisException
      */
-    private function mapItems(array $foundBooks, CatalogRequest $request): array
+    private function mapItems(array $foundBooks, SearchRequest $request): array
     {
         $mfns = [];
         foreach ($foundBooks as $brief) {
@@ -93,30 +93,47 @@ final class SearchService
         return $items;
     }
 
-    private function buildExpression(CatalogRequest $request): string
+    private function buildExpression(SearchRequest $request): string
     {
+        $parts = [];
+
         if ($request->searchCategory !== '') {
-            return (string) Search::equals('S=', $request->searchCategory . '$');
+            $parts[] = (string) Search::equals('S=', $request->searchCategory . '$');
         }
 
-        if ($request->searchString === '') {
+        if ($request->searchString !== '') {
+            $map = [
+                'title' => 'T=',
+                'author' => 'A=',
+                'keywords' => 'K=',
+            ];
+
+            $parts[] = (string) Search::equals(
+                $map[$request->searchBy] ?? 'T=',
+                $request->searchString . '$'
+            );
+        }
+
+        $parts = apply_filters(
+            'wp_irbis/search_expression_parts',
+            $parts,
+            $request
+        );
+
+        $parts = array_values(array_filter(
+            is_array($parts) ? $parts : [],
+            static fn ($part): bool => is_string($part) && trim($part) !== ''
+        ));
+
+        if ($parts === []) {
             return '';
         }
 
-        $map = [
-            'title' => 'T=',
-            'author' => 'A=',
-            'keywords' => 'K=',
-        ];
-
-        return (string) Search::equals(
-            $map[$request->searchBy] ?? 'T=',
-            $request->searchString . '$'
-        );
+        return implode(' * ', $parts);
     }
 
     private function makeDebugPayload(
-        CatalogRequest $request,
+        SearchRequest $request,
         ?SearchParameters $parameters = null,
         array $foundBooks = [],
         int $mappedItems = 0,
@@ -130,6 +147,7 @@ final class SearchService
             'search_by' => $request->searchBy,
             'search_string' => $request->searchString,
             'search_category' => $request->searchCategory,
+            'filters' => $request->filters,
             'base_url' => $request->baseUrl,
             'limit' => $request->limit,
             'expression' => $parameters instanceof SearchParameters ? (string) $parameters->expression : '',

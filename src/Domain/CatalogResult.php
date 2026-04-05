@@ -14,7 +14,7 @@ final class CatalogResult
     public function __construct(
         public readonly array $items,
         public readonly ?WP_Error $error,
-        public readonly CatalogRequest $request,
+        public readonly SearchRequest $request,
         public readonly bool $hasQuery,
         public readonly array $debug = []
     ) {

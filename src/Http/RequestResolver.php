@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace WpIrbis\Http;
 
-use WpIrbis\Domain\CatalogRequest;
+use WpIrbis\Domain\SearchRequest;
 use WpIrbis\Support\UrlResolver;
 
 final class RequestResolver
@@ -13,13 +13,13 @@ final class RequestResolver
     {
     }
 
-    public function fromGlobals(array $args = []): CatalogRequest
+    public function searchFromGlobals(array $args = []): SearchRequest
     {
         $query = [
             'search_by' => isset($_GET['irbis_search_by']) ? sanitize_key(wp_unslash($_GET['irbis_search_by'])) : null,
             'search_string' => isset($_GET['irbis_search_string']) ? sanitize_text_field(wp_unslash($_GET['irbis_search_string'])) : null,
             'search_category' => isset($_GET['irbis_search_category']) ? sanitize_text_field(wp_unslash($_GET['irbis_search_category'])) : null,
-            'base_url' => null,
+            'filters' => isset($_GET['irbis_filters']) ? wp_unslash($_GET['irbis_filters']) : null,
         ];
 
         $args = array_filter(
@@ -27,27 +27,30 @@ final class RequestResolver
             static fn ($value): bool => $value !== null
         );
 
-        return $this->fromArray(array_merge($query, $args));
+        return $this->searchFromArray(array_merge($query, $args));
     }
 
-    public function fromArray(array $args = []): CatalogRequest
+    public function searchFromArray(array $args = []): SearchRequest
     {
-        $normalized = $this->normalize($args);
+        if (array_key_exists('irbis_filters', $args) && ! array_key_exists('filters', $args)) {
+            $args['filters'] = $args['irbis_filters'];
+        }
+
+        $normalized = $this->normalizeSearch($args);
 
         $filtered = apply_filters('wp_irbis/request', $normalized, $args);
 
-        if ($filtered instanceof CatalogRequest) {
+        if ($filtered instanceof SearchRequest) {
             return $filtered;
         }
 
         if (is_array($filtered)) {
-            return $this->normalize($filtered);
+            return $this->normalizeSearch($filtered);
         }
 
         return $normalized;
     }
-
-    private function normalize(array $args): CatalogRequest
+    private function normalizeSearch(array $args): SearchRequest
     {
         $args = array_filter(
             $args,
@@ -60,10 +63,9 @@ final class RequestResolver
                 'search_by' => 'title',
                 'search_string' => '',
                 'search_category' => '',
+                'filters' => [],
                 'limit' => 10,
                 'base_url' => '',
-                'show_form' => true,
-                'show_results' => true,
             ]
         );
 
@@ -71,14 +73,51 @@ final class RequestResolver
             ? (string) $request['search_by']
             : 'title';
 
-        return new CatalogRequest(
+        return new SearchRequest(
             $searchBy,
             sanitize_text_field((string) $request['search_string']),
             sanitize_text_field((string) $request['search_category']),
+            $this->normalizeFilters($request['filters']),
             max(1, (int) $request['limit']),
-            $this->urlResolver->resolve((string) $request['base_url']),
-            wp_validate_boolean($request['show_form']),
-            wp_validate_boolean($request['show_results'])
+            $this->urlResolver->resolve((string) $request['base_url'])
         );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function normalizeFilters(mixed $filters): array
+    {
+        if (is_string($filters) && $filters !== '') {
+            $decoded = json_decode($filters, true);
+            $filters = is_array($decoded) ? $decoded : [];
+        }
+
+        if (! is_array($filters)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($filters as $key => $value) {
+            $key = sanitize_key((string) $key);
+            if ($key === '') {
+                continue;
+            }
+
+            if (is_scalar($value)) {
+                $value = sanitize_text_field((string) $value);
+            } else {
+                continue;
+            }
+
+            if ($value === '') {
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
     }
 }

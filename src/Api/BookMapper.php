@@ -6,11 +6,11 @@ namespace WpIrbis\Api;
 
 use Irbis\MarcRecord;
 use WpIrbis\Domain\Book;
-use WpIrbis\Domain\CatalogRequest;
+use WpIrbis\Domain\SearchRequest;
 
 final class BookMapper
 {
-    public function map(object $brief, MarcRecord $record, CatalogRequest $request): Book
+    public function map(object $brief, MarcRecord $record, SearchRequest $request): Book
     {
         $category = (string) $record->fm(606, 'A');
 
