@@ -14,6 +14,8 @@ final class Book
         public readonly string $category,
         public readonly string $categoryLink,
         public readonly string $cover,
+        public readonly string $isbn,
+        public readonly string $bbk,
         public readonly object $record,
         public readonly object $brief
     ) {
@@ -29,6 +31,8 @@ final class Book
             'category' => $this->category,
             'category_link' => $this->categoryLink,
             'cover' => $this->cover,
+            'isbn' => $this->isbn,
+            'bbk' => $this->bbk,
         ];
     }
 }
